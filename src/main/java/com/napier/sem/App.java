@@ -10,7 +10,7 @@ public class App
     public static void main(String[] args)
     {
         // Use try-with-resources so MongoClient is closed automatically
-        try (MongoClient mongoClient = new MongoClient("localhost", 27017)) {
+        try (MongoClient mongoClient = new MongoClient("mongo-dbserver", 27017)) { // <-- changed host here
             // Get a database - will create when we use it
             MongoDatabase database = mongoClient.getDatabase("mydb");
             // Get a collection from the database
