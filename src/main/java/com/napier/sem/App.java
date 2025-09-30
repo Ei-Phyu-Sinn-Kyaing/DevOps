@@ -1,31 +1,49 @@
 package com.napier.sem;
 
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.MongoCollection;
-import org.bson.Document;
+import java.sql.*;
 
-public class App
-{
-    public static void main(String[] args)
-    {
-        // Use try-with-resources so MongoClient is closed automatically
-        try (MongoClient mongoClient = new MongoClient("mongo-dbserver", 27017)) { // <-- changed host here
-            // Get a database - will create when we use it
-            MongoDatabase database = mongoClient.getDatabase("mydb");
-            // Get a collection from the database
-            MongoCollection<Document> collection = database.getCollection("test");
-            // Create a document to store
-            Document doc = new Document("name", "Kevin Sim")
-                    .append("class", "DevOps")
-                    .append("year", "2024")
-                    .append("result", new Document("CW", 95).append("EX", 85));
-            // Add document to collection
-            collection.insertOne(doc);
+public class App {
+    public static void main(String[] args) {
+        try {
+            // Load MySQL JDBC Driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Could not load SQL driver");
+            System.exit(-1);
+        }
 
-            // Check document in collection
-            Document myDoc = collection.find().first();
-            System.out.println(myDoc.toJson());
-        } // mongoClient is automatically closed here
+        String dbHost = System.getenv("DB_HOST");
+        String dbPort = System.getenv("DB_PORT");
+        String dbName = System.getenv("DB_NAME");
+        String dbUser = System.getenv("DB_USER");
+        String dbPass = System.getenv("DB_PASSWORD");
+
+        String jdbcUrl = "jdbc:mysql://" + dbHost + ":" + dbPort + "/" + dbName +
+                "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+        Connection con = null;
+        int retries = 20;  // enough retries for DB startup
+        for (int i = 0; i < retries; ++i) {
+            System.out.println("Connecting to database... attempt " + (i + 1));
+            try {
+                con = DriverManager.getConnection(jdbcUrl, dbUser, dbPass);
+                System.out.println("Successfully connected to database!");
+                break;
+            } catch (SQLException sqle) {
+                System.out.println("Failed attempt " + (i + 1) + ": " + sqle.getMessage());
+                try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+            }
+        }
+
+        if (con != null) {
+            try {
+                con.close();
+                System.out.println("Connection closed.");
+            } catch (SQLException e) {
+                System.out.println("Error closing connection: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Could not connect to database after multiple attempts.");
+        }
     }
 }
